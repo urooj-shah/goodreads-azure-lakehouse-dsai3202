@@ -1,0 +1,27 @@
+{
+  "layer": "bronze",
+  "storage_account": "goodreadsreviews60300832",
+  "container": "lakehouse",
+  "description": "Raw Goodreads JSON data ingested from public dataset via wget + azcopy into ADLS Gen2.",
+  "folders": {
+    "books": "/lakehouse/raw/books/",
+    "reviews": "/lakehouse/raw/reviews/",
+    "authors": "/lakehouse/raw/authors/"
+  },
+  "file_format": "JSON (gzip compressed)",
+  "example_files": [
+    "goodreads_books.json.gz",
+    "goodreads_reviews_dedup.json.gz",
+    "goodreads_book_authors.json.gz"
+  ],
+  "schema_sample": {
+    "book_id": "string",
+    "title": "string",
+    "authors": "array<string>",
+    "average_rating": "float",
+    "ratings_count": "integer",
+    "text_reviews_count": "integer"
+  },
+  "ingestion_method": "VM terminal using wget → gzip -d → azcopy copy to ADLS Gen2",
+  "notes": "No transformations applied. Serves as immutable raw zone for downstream ADF pipelines."
+}
