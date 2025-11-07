@@ -154,7 +154,7 @@ All steps are documented in the `fabric/` folder (Power Query M scripts, JSON st
 
 4) **Aggregations (sigh):**
 
-    - Alright listen, *let me be clear* ([**obama voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ)). I understand that I was to set up the aggregations in fabric(average rating per BookID, number of reviews per BookID, average rating per AuthorName). But it quiet literally did not work for me after several tries and imma be honest like by then you updated the lab so I just moved on to databricks. It was the same execution timeout error which I'm assuming is due to the magnitude of data. I still documented documented every step, saved the query logic, and just redid the whole thing in Databricks. Docuementation can be found in `fabric/fabric_steps_mapping.json`. 
+    - Alright listen, *let me be clear* [***obama voice***](https://www.youtube.com/watch?v=dQw4w9WgXcQ). I understand that I was to set up the aggregations in fabric(average rating per BookID, number of reviews per BookID, average rating per AuthorName). But it quiet literally did not work for me after several tries and imma be honest like by then you updated the lab so I just moved on to databricks. It was the same execution timeout error which I'm assuming is due to the magnitude of data. I still documented documented every step, saved the query logic, and just redid the whole thing in Databricks. Docuementation can be found in `fabric/fabric_steps_mapping.json`. 
     - Also obvi i never ended up publishing either.
 
 5) **Databricks: Cleaning and Feature Preparation**: 
