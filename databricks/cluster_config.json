@@ -1,0 +1,14 @@
+{
+  "cluster_name": "goodreads-cluster-60300832",
+  "databricks_runtime": "16.4 LTS (Apache Spark 3.5.2, Scala 2.12)",
+  "worker_type": "Standard_D4ds_v5",
+  "worker_specs": {
+    "memory_GB": 16,
+    "cores": 4
+  },
+  "autoscale": {
+    "min_workers": 2,
+    "max_workers": 4
+  },
+  "notes": "Cluster used for Databricks portion of Lab 3 — data cleaning, curation, and feature engineering. Storage credentials are configured only at runtime and excluded from repo."
+}

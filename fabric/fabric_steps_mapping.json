@@ -1,0 +1,96 @@
+{
+  "workspace": "goodreads-ws-60300832",
+  "dataflow": "goodreads_features",
+  "source": "/lakehouse/gold/curated_reviews",
+  "description": "Mapping between actual Microsoft Fabric transformation steps and Lab 3 Data Preprocessing instructions.",
+  "steps": [
+    {
+      "step_number": 1,
+      "fabric_action": "Source → DeltaTable",
+      "lab_instruction": "Connect to curated Delta table in ADLS Gen2",
+      "purpose": "Imported curated_reviews Delta table from Gold layer as starting point."
+    },
+    {
+      "step_number": 2,
+      "fabric_action": "Changed column type with locale",
+      "lab_instruction": "V.2 a – Adjust Data Types",
+      "purpose": "Set correct data types: rating → Decimal, date_added → Date/Time, IDs → Text."
+    },
+    {
+      "step_number_range": "3-5",
+      "fabric_action": "Removed blank rows (x3)",
+      "lab_instruction": "V.2 b – Handle Missing or Invalid Values",
+      "purpose": "Removed blank rows in key columns: book_id, rating, and review_text."
+    },
+    {
+      "step_number": 6,
+      "fabric_action": "Added custom",
+      "lab_instruction": "V.2 b – Handle Missing or Invalid Values",
+      "purpose": "Created review_length = Text.Length([review_text]) for filtering short reviews."
+    },
+    {
+      "step_number": 7,
+      "fabric_action": "Filtered rows",
+      "lab_instruction": "V.2 b – Handle Missing or Invalid Values",
+      "purpose": "Filtered rows where review_length < 10 or rating is invalid."
+    },
+    {
+      "step_number": 8,
+      "fabric_action": "Removed columns",
+      "lab_instruction": "Data cleaning best practice",
+      "purpose": "Dropped redundant or unnecessary columns."
+    },
+    {
+      "step_number": 9,
+      "fabric_action": "Removed errors",
+      "lab_instruction": "V.2 b – Handle Missing or Invalid Values",
+      "purpose": "Removed rows failing data-type conversion or invalid formats."
+    },
+    {
+      "step_number": 10,
+      "fabric_action": "Changed column type",
+      "lab_instruction": "V.2 a – Adjust Data Types",
+      "purpose": "Performed final schema pass to ensure all column types are correct."
+    },
+    {
+      "step_number_range": "11-12",
+      "fabric_action": "Replaced value (x2)",
+      "lab_instruction": "V.2 b – Handle Missing or Invalid Values",
+      "purpose": "Replaced missing n_votes with 0 and missing language with 'Unknown'."
+    },
+    {
+      "step_number_range": "13-15",
+      "fabric_action": "Trimmed text (x3)",
+      "lab_instruction": "V.2 c – Trim and Standardize Text",
+      "purpose": "Trimmed whitespace in title, name, and review_text columns."
+    },
+    {
+      "step_number_range": "16-17",
+      "fabric_action": "Capitalized each word (x2)",
+      "lab_instruction": "V.2 c – Trim and Standardize Text",
+      "purpose": "Applied capitalization on title and name columns for consistent formatting."
+    },
+    {
+      "step_number": 18,
+      "fabric_action": "Added custom 2 (removed)",
+      "lab_instruction": "V.3 – Aggregations and Enrichment",
+      "purpose": "Attempted to create derived features (average rating per book, review counts, word count stats) but the Group By transformation repeatedly failed to load. Aggregations were ultimately removed to ensure successful dataflow validation."
+    }
+  ],
+  "summary_alignment": {
+    "adjust_data_types": [2, 10],
+    "handle_missing_invalid_values": ["3-12"],
+    "trim_and_standardize_text": ["13-17"],
+    "aggregations_and_enrichment": {
+      "attempted": true,
+      "status": "Removed due to persistent Fabric load errors",
+      "original_intent": [
+        "Average rating per BookID",
+        "Number of reviews per BookID",
+        "Average rating per AuthorName",
+        "Word count statistics on reviews"
+      ]
+    }
+  },
+  "notes": "All cleaning, validation, and text-standardization tasks were completed successfully. Aggregations were excluded due to Fabric execution instability, which prevented publishing. Dataflow remains validated through the cleaning phase and can be extended later once the workspace performance issues are resolved."
+}
