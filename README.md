@@ -7,6 +7,7 @@
 This lab builds on the cleaned and curated Goodreads dataset from the Gold layer, going from data preparation to feature extraction. The goal is to convert the existing review text into numerical and semantic representations that models can learn from.
 
 Using Azure Databricks with PySpark, scikit-learn, NLTK, and Sentence-Transformers, I engineered features like TF-IDF, sentiment polarity, and embeddings. The final enriched dataset, `features_v2`, is saved in the Gold layer (`/gold/features_v2/`) as a Delta table the transition to a fully model-ready stage.
+
 ---
 
 ### README Organization
