@@ -132,7 +132,7 @@ This final Delta table contains everything from the curated Gold data plus all e
 Full implementation also documented in:
 `/databricks/notebooks/goodreads_text_features.ipynb`
 
-### Challenges
+### 3) Challenges
 Alright listen ([**Navi from Zelda voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1)).
 
 I love this part no I really do bc its really just a rant session honestly. Ranting to the gang is never enough when you got  a whole readme file to yell in.
@@ -148,7 +148,7 @@ I think the runtime was as long as a the life time of a mousquito.
 3) Schema Alignment:
  Data types issues or just issues in the code in general really. My TF-IDF was a vector, but my SBERT output was an array, and of course, so that wasnt really matching up so that needed to be dealt with after every unsuccessful run.
 
-### Conclusion
+### 4) Conclusion
 
 This laboratory work hath completed the transition from curated Gold data to a model-ready feature dataset by applying transformations of advanced Natural Language Processing most ingenious. `features_v2` now serveth as the analytical foundation for downstream tasks such as classification and recommendation modeling of great utility.
 
