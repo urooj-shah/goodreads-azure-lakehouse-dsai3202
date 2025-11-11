@@ -132,7 +132,7 @@ This final Delta table contains everything from the curated Gold data plus all e
 Full implementation also documented in:
 `/databricks/notebooks/goodreads_text_features.ipynb`
 
-### Challenges
+### Crashout
 Alright listen ([**Navi from Zelda voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1)).
 
 I love this part no I really do bc its really just a rant session honestly. Ranting to the gang is never enough when you got  a whole readme file to yell in.
