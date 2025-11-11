@@ -10,5 +10,5 @@
     "min_workers": 2,
     "max_workers": 4
   },
-  "notes": "Cluster used for Databricks portion of Lab 3 — data cleaning, curation, and feature engineering. Storage credentials are configured only at runtime and excluded from repo."
+  "notes": "Cluster used for Databricks portion"
 }

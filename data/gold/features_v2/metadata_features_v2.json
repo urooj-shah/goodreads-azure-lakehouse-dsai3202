@@ -1,0 +1,73 @@
+{
+  "table_name": "features_v2",
+  "layer": "gold",
+  "storage_account": "goodreadsreviews60300832",
+  "container": "lakehouse",
+  "file_format": "Delta",
+  "description": "Final text feature dataset generated in Lab 4 — Text Feature Engineering on Azure. Combines linguistic, sentiment, statistical, and semantic representations of Goodreads reviews for downstream modeling and analysis.",
+  "source": "/lakehouse/gold/features_v2/",
+  "input_lineage": [
+    "/lakehouse/gold/curated_reviews/",
+    "/lakehouse/gold/features_v1/"
+  ],
+  "schema": {
+    "review_id": "string",
+    "book_id": "string",
+    "title": "string",
+    "author_id": "string",
+    "author_name": "string",
+    "user_id": "string",
+    "rating": "double",
+    "review_text": "string",
+    "language_code": "string",
+    "n_votes": "long",
+    "date_added": "date",
+    "book_review_count": "long",
+    "book_avg_rating": "double",
+    "clean_text": "string",
+    "review_length_words": "integer",
+    "review_length_chars": "integer",
+    "sentiment_pos": "double",
+    "sentiment_neu": "double",
+    "sentiment_neg": "double",
+    "sentiment_compound": "double",
+    "tfidf_features": "vector",
+    "bert_embedding": "vector",
+    "feature_source": "string",
+    "created_timestamp": "timestamp"
+  },
+  "feature_groups": {
+    "basic_text_features": [
+      "review_length_words",
+      "review_length_chars"
+    ],
+    "sentiment_features": [
+      "sentiment_pos",
+      "sentiment_neu",
+      "sentiment_neg",
+      "sentiment_compound"
+    ],
+    "tfidf_features": [
+      "tfidf_features"
+    ],
+    "semantic_embeddings": [
+      "bert_embedding"
+    ],
+    "metadata_columns": [
+      "review_id",
+      "book_id",
+      "title",
+      "author_id",
+      "author_name",
+      "user_id",
+      "rating",
+      "language_code",
+      "n_votes",
+      "date_added",
+      "book_review_count",
+      "book_avg_rating",
+      "clean_text"
+    ]
+  },
+  "notes": "features_v2 merges curated and engineered attributes: base metadata, review-length measures, sentiment scores, TF-IDF representations, and BERT embeddings. Stored as Delta tables in the Gold layer for model training in the next lab."
+}

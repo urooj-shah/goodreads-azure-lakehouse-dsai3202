@@ -5,25 +5,69 @@
   "description": "Curated and feature-enriched Delta tables created in Azure Databricks and stored in the Gold layer for Microsoft Fabric and Power BI integration.",
   "folders": {
     "curated_reviews": "/lakehouse/gold/curated_reviews/",
-    "features_v1": "/lakehouse/gold/features_v1/"
+    "features_v1": "/lakehouse/gold/features_v1/",
+    "features_v2": "/lakehouse/gold/features_v2/"
   },
   "file_format": "Delta",
   "tables": [
     "curated_reviews",
-    "features_v1"
+    "features_v1",
+    "features_v2"
   ],
   "schema_curated_reviews": {
     "review_id": "string",
     "book_id": "string",
     "title": "string",
     "author_id": "string",
-    "name": "string",
+    "author_name": "string",
     "user_id": "string",
-    "rating": "integer",
+    "rating": "double",
     "review_text": "string",
-    "language": "string",
-    "n_votes": "integer",
-    "date_added": "timestamp"
+    "language_code": "string",
+    "n_votes": "long",
+    "date_added": "date"
   },
-  "notes": "This layer provides cleaned, curated, and feature-rich data ready for analysis and visualization in Fabric."
+  "schema_features_v1": {
+    "review_id": "string",
+    "book_id": "string",
+    "title": "string",
+    "author_id": "string",
+    "author_name": "string",
+    "user_id": "string",
+    "rating": "double",
+    "review_text": "string",
+    "language_code": "string",
+    "n_votes": "long",
+    "date_added": "date",
+    "book_review_count": "long",
+    "book_avg_rating": "double",
+    "clean_text": "string",
+    "review_length_words": "integer",
+    "review_length_chars": "integer"
+  },
+  "schema_features_v2": {
+    "review_id": "string",
+    "book_id": "string",
+    "title": "string",
+    "author_id": "string",
+    "author_name": "string",
+    "user_id": "string",
+    "rating": "double",
+    "review_text": "string",
+    "language_code": "string",
+    "n_votes": "long",
+    "date_added": "date",
+    "book_review_count": "long",
+    "book_avg_rating": "double",
+    "clean_text": "string",
+    "review_length_words": "integer",
+    "review_length_chars": "integer",
+    "tfidf_features": "vector",
+    "sentiment_pos": "double",
+    "sentiment_neu": "double",
+    "sentiment_neg": "double",
+    "sentiment_compound": "double",
+    "bert_embedding": "vector"
+  },
+  "notes": "Data lineage: curated_reviews → features_v1 (adds aggregations and text-based TF-IDF features) → features_v2 (adds sentiment scores and semantic embeddings for modeling)."
 }
