@@ -74,7 +74,7 @@ The complete implementation can be found in the Databricks notebook:
 
 Verily, this section doth transform each review into manifold numerical representations, capturing the essence of linguistic craft, emotional tempest, and semantic understanding.
 
-**What on earth whats this medieval peasant doing in my readme file**
+*What on earth whats this medieval peasant doing in my readme file*
 
 A knee ways...
 
@@ -185,7 +185,7 @@ I love this part no I really do bc its really just a rant session honestly. Rant
 
 This laboratory work hath completed the transition from curated Gold data to a model-ready feature dataset by applying transformations of advanced Natural Language Processing most ingenious. `features_v2` now serveth as the analytical foundation for downstream tasks such as classification and recommendation modeling of great utility.
 
-**YOOO the medeival peasant is back jeez louis who invited this guy**
+*YOOO the medeival peasant is back jeez louis who invited this guy*
 
 Bruh, anyways, this lab basically wraps up the whole text feature engineering process. By combining sentiment analysis, TF-IDF, and SBERT embeddings, the dataset now captures both the structure and the meaning of reviews. `features_v2` is officially model ready inshaAllah and will be used in the next stage for training and evaluation.
 
