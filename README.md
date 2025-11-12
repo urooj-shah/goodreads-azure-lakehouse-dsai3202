@@ -19,6 +19,7 @@ This README is organized as follows:
    - II. [Text Cleaning and Normalization](#ii-text-cleaning-and-normalization)  
    - III. [Feature Extraction](#iii-feature-extraction)
    - IV. [Combined Feature Output and Saving](#iv-combined-feature-output-and-saving)
+   - V. [Final Dataset Schema](#v-final-dataset-schema)
 3. [Crashout](#3-crashout)   
 4. [Conclusion](#4-conclusion)
 
@@ -110,7 +111,7 @@ Steps included:
 
 This gives each review a numerical understanding of which words actually matter, based on how unique and relevant they are.
 
-4) Semantic Embeddings (SBERT)
+**4) Semantic Embeddings (SBERT)**
 
 After TF-IDF, I added Sentence-BERT (SBERT) embeddings. These embeddings turn each review into a 384-dimensional vector `bert_embedding` that captures the actual meaning of the text and not just which words appear. Som for example, reviews that say “i dislike french people” and “French are the worst” would end up close together because they mean the same thing, even if they use different words.
 
@@ -132,27 +133,59 @@ This final Delta table contains everything from the curated Gold data plus all e
 Full implementation also documented in:
 `/databricks/notebooks/goodreads_text_features.ipynb`
 
-### 3) Challenges
+### V. Final Dataset Schema
+
+Alright so after combining the engineered features with the original metadata, the final dataset contains the following columns, each representing a different aspect of the reviews like from raw text to sentiment, semantics, and structure:
+
+| **Column**              | **Type**     | **Description**                                                                                                   |
+| ----------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **review_id**           | string       | Unique identifier for each review record. Primary key used for joins.                                             |
+| **book_id**             | string       | Unique identifier for the book being reviewed.                                                                    |
+| **user_id**             | string       | Identifier of the user who wrote the review.                                                                      |
+| **author_id**           | string       | Identifier of the book’s author.                                                                                  |
+| **author_name**         | string       | Name of the author of the reviewed book.                                                                          |
+| **title**               | string       | Title of the reviewed book.                                                                                       |
+| **language_code**       | string       | ISO code for the language of the review/book.                                                                     |
+| **rating**              | double       | Numeric user rating (1–5).                                                                                        |
+| **date_added**          | date         | Date the review was added to Goodreads.                                                                           |
+| **book_review_count**   | long         | Number of total reviews for the book.                                                                             |
+| **book_avg_rating**     | double       | Average rating of the book across all reviews.                                                                    |
+| **features**            | `VectorUDT`  | Combined vector of all numerical + textual features → `[TF-IDF + BERT + sentiment + lengths]`. Used for modeling. |
+| **tfidf_features**      | `VectorUDT`  | Sparse high-dimensional TF-IDF vector capturing term importance.                                                  |
+| **bert_embedding**      | array<float> | Dense 384-dimensional SBERT embedding capturing semantic meaning.                                                 |
+| **review_text**         | string       | Original unprocessed review text.                                                                                 |
+| **clean_text**          | string       | Normalized review text used for feature extraction.                                                               |
+| **review_length_words** | integer      | Number of words in the review. Measures verbosity.                                                                |
+| **review_length_chars** | integer      | Number of characters in the review. Measures review length.                                                       |
+| **sentiment_pos**       | double       | Proportion of positive sentiment words (from VADER).                                                              |
+| **sentiment_neu**       | double       | Proportion of neutral sentiment words (from VADER).                                                               |
+| **sentiment_neg**       | double       | Proportion of negative sentiment words (from VADER).                                                              |
+| **sentiment_compound**  | double       | Overall sentiment polarity (−1 = very negative, +1 = very positive).                                              |
+| **label**               | integer      | Binary classification target → 1 if `rating ≥ 4.0`, else 0.                                                       |
+
+
+### Challenges
 Alright listen ([**Navi from Zelda voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1)).
 
 I love this part no I really do bc its really just a rant session honestly. Ranting to the gang is never enough when you got  a whole readme file to yell in.
 
-1) Memory Constraints (aka the Databricks meltdown):
+1) Memory Constraints (the Databricks meltdown):
 
-- TF-IDF and SBERT embeddings... Every time I thought it was running fine, *LOONEY TUNES EXPLOSION* “Python worker exited unexpectedly (OOM).” At this point, I’m pretty sure I wrote bill gates name in the death note. I think I was trying to encode huge chunks of text all at once. I eventually fixed it by splitting the data into smaller batches and running the embeddings in 50 batches. <sub>well idk if this fixed it bc its still running but we just gonna pretend it has run aight</sub> 
+- TF-IDF and SBERT embeddings... Every time I thought it was running fine, *LOONEY TUNES EXPLOSION* “Python worker exited unexpectedly (OOM).” At this point, I’m pretty sure I wrote bill gates name in the death note. I think I was trying to encode huge chunks of text all at once. I eventually fixed it by splitting the data into smaller batches and running the embeddings in 50 batches. 
 
 2) Long Runtime:
 
-I think the runtime was as long as a the life time of a mousquito.
+- I think the runtime was as long as a the life time of a mosquito.
 
 3) Schema Alignment:
- Data types issues or just issues in the code in general really. My TF-IDF was a vector, but my SBERT output was an array, and of course, so that wasnt really matching up so that needed to be dealt with after every unsuccessful run.
 
-### 4) Conclusion
+ - Data types issues or just issues in the code in general really. My TF-IDF was a vector, but my SBERT output was an array, and of course, so that wasnt really matching up so that needed to be dealt with after every unsuccessful run.
+
+### Conclusion
 
 This laboratory work hath completed the transition from curated Gold data to a model-ready feature dataset by applying transformations of advanced Natural Language Processing most ingenious. `features_v2` now serveth as the analytical foundation for downstream tasks such as classification and recommendation modeling of great utility.
 
-**YOOO the medeival peasant is back what the heckers who invited this guy**
+**YOOO the medeival peasant is back jeez louis who invited this guy**
 
 Bruh, anyways, this lab basically wraps up the whole text feature engineering process. By combining sentiment analysis, TF-IDF, and SBERT embeddings, the dataset now captures both the structure and the meaning of reviews. `features_v2` is officially model ready inshaAllah and will be used in the next stage for training and evaluation.
 
