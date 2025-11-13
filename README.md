@@ -113,7 +113,7 @@ This gives each review a numerical understanding of which words actually matter,
 
 **4) Semantic Embeddings (SBERT)**
 
-After TF-IDF, I added Sentence-BERT (SBERT) embeddings. These embeddings turn each review into a 384-dimensional vector `bert_embedding` that captures the actual meaning of the text and not just which words appear. Som for example, reviews that say “i dislike french people” and “French are the worst” would end up close together because they mean the same thing, even if they use different words.
+After TF-IDF, I added Sentence-BERT (SBERT) embeddings. These embeddings turn each review into a 384-dimensional vector `bert_embedding` that captures the actual meaning of the text and not just which words appear. Som for example, reviews that say “i like canadian people” and “Canadians are the nice” would end up close together because they mean the same thing, even if they use different words.
 
 Because this is a heavy model, I had to set it up so Databricks wouldn’t crash from memory errors OOM...:(  . So bc of that I split the data into smaller chunks (50 parts) and processed them one at a time. I also made sure each of them reused the same model instead of reloading it every time. This was what I hoped would make it faster but I'm not really sure it did so we move.
 
