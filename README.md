@@ -128,7 +128,9 @@ Once all features (length, sentiment, TF-IDF, and embeddings) were generated, I 
 
 `/gold/features_v2/train_allfeatures`
 
-This final Delta table contains everything from the curated Gold data plus all engineered features fully model-ready for training and analysis in the next lab.
+*Sidenote* -> I didn’t use VectorAssembler here (i feel like now with the knowledge i have i could have made this word pretty easily but i was in no mood to run stuff again) because my TF-IDF features and SBERT embeddings were already stored as arrays/vectors, and Spark was giving me weird errors. So instead of fighting with it, I just combined everything into one clean list and turned it into a dense vector at the end. I mean this is literally what VectorAssembler, just done manually ig.
+
+This final Delta table contains everything from the curated Gold data plus all engineered features fully model ready for training and analysis in the next lab.
 
 Full implementation also documented in:
 `/databricks/notebooks/goodreads_text_features.ipynb`
@@ -161,17 +163,17 @@ Alright so after combining the engineered features with the original metadata, t
 | **sentiment_neu**       | double       | Proportion of neutral sentiment words (from VADER).                                                               |
 | **sentiment_neg**       | double       | Proportion of negative sentiment words (from VADER).                                                              |
 | **sentiment_compound**  | double       | Overall sentiment polarity (−1 = very negative, +1 = very positive).                                              |
-| **label**               | integer      | Binary classification target → 1 if `rating ≥ 4.0`, else 0.                                                       |
+
 
 
 ### Challenges
 Alright listen ([**Navi from Zelda voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1)).
 
-I love this part no I really do bc its really just a rant session honestly. Ranting to the gang is never enough when you got  a whole readme file to yell in.
+Ranting to the gang is never enough when you got a whole readme file to yell in.
 
 1) Memory Constraints (the Databricks meltdown):
 
-- TF-IDF and SBERT embeddings... Every time I thought it was running fine, *LOONEY TUNES EXPLOSION* “Python worker exited unexpectedly (OOM).” At this point, I’m pretty sure I wrote bill gates name in the death note. I think I was trying to encode huge chunks of text all at once. I eventually fixed it by splitting the data into smaller batches and running the embeddings in 50 batches. 
+- TF-IDF and SBERT embeddings... Every time I thought it was running fine, *LOONEY TUNES EXPLOSION* “Python worker exited unexpectedly (OOM).” At this point, I’m pretty sure I wrote bill gates name in the death note. I think I was trying to encode huge chunks of text all at once. I eventually fixed it by splitting the data into smaller batches and running the embeddings in 50 batches. Still wasnt efficient enough but it ran sooo 
 
 2) Long Runtime:
 
