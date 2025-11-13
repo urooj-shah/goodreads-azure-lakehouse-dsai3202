@@ -1,10 +1,12 @@
-# DSAI3202 — Lab 3
-## Data Preprocessing on Azure
+# DSAI3202 — Lab 4
+## Text Feature Engineering on Azure
 #### Urooj Shah 60300832
 ---
 ### Introduction
 
-This lab builds an Azure Lakehouse for the Goodreads dataset using the medallion architecture. Raw JSON data is stored in Azure Data Lake Storage Gen2 (Bronze), converted to Parquet using Azure Data Factory (Silver), and connected to Microsoft Fabric for cleaning and documentation. Final transformations and curation are completed in Databricks, producing a cleaned and enriched Gold layer Delta table.
+This lab builds on the cleaned and curated Goodreads dataset from the Gold layer, going from data preparation to feature extraction. The goal is to convert the existing review text into numerical and semantic representations that models can learn from.
+
+Using Azure Databricks with PySpark, scikit-learn, NLTK, and Sentence-Transformers, I engineered features like TF-IDF, sentiment polarity, and embeddings. The final enriched dataset, `features_v2`, is saved in the Gold layer (`/gold/features_v2/`) as a Delta table the transition to a fully model-ready stage.
 
 ---
 
@@ -12,175 +14,179 @@ This lab builds an Azure Lakehouse for the Goodreads dataset using the medallion
 This README is organized as follows:
 
 1. [Project Directory Structure](#1-project-directory-structure)  
-2. [Homework Sections](#2-homework-sections)  
-   - I. [Homework Part 1 — Curate and Register the Gold Table](#homework-part-1--curate-and-register-the-gold-table)  
-   - II. [Homework Part 2 — Data Cleaning and Feature Preparation](#homework-part-2--data-cleaning-and-feature-preparation)  
-3. [Challenges](#challenges)   
-5. [Conclusion](#conclusion)
+2. [Lab Sections](#2-lab-sections)  
+   - I. [Dataset Split and Configuration](#i-dataset-split-and-configuration)  
+   - II. [Text Cleaning and Normalization](#ii-text-cleaning-and-normalization)  
+   - III. [Feature Extraction](#iii-feature-extraction)
+   - IV. [Combined Feature Output and Saving](#iv-combined-feature-output-and-saving)
+   - V. [Final Dataset Schema](#v-final-dataset-schema)
+3. [Crashout](#3-crashout)   
+4. [Conclusion](#4-conclusion)
 
 ---
 ### 1) Project Directory Structure
 Below is the structure of this GitHub repository:
 ```
 goodreads-azure-lakehouse-dsai3202/
-├── data/                                      # Medallion architecture layers (Bronze, Silver, Gold)
-│   ├── raw/
-│   │   └── metadata_bronze.json               # Raw JSON ingestion details 
-│   │
-│   ├── processed/
-│   │   └── metadata_silver.json               # Parquet outputs & pipeline metadata (ADF transformations)
-│   │
+├── data/
 │   └── gold/
-│       └── metadata_gold.json                 # Delta tables metadata (curated_reviews, features_v1)
+│       ├── features_v2/
+│       │   └── metadata_features_v2.json        # schema + lineage for features_v2 table
+│       └── metadata_gold.json                   # overall gold layer metadata (curated, v1, v2)
 │
-├── databricks/                                # Databricks environment configurations & notebooks
+├── databricks/
 │   ├── notebooks/
-│   │   ├── cleaning_data.ipynb                # Cleans and validates Silver data 
-│   │   └── loading_gold.ipynb                 # Joins, curates, and saves Gold layer Delta tables
+│   │   ├── splitting_data.ipynb                 # Train/validation/test splits from features_v1
+│   │   └── goodreads_text_features.ipynb        # Main Lab 4 feature engineering workflow
 │   │
-│   └── cluster_config.json                    # Databricks cluster setup 
+│   └── cluster_config.json                      # Databricks cluster setup (runtime, workers, libraries)
 │
-├── fabric/                                    # Microsoft Fabric integration and documentation
-│   ├── connect_curated_reviews.m              # M-code connection to curated_reviews table
-│   ├── fabric_steps_mapping.json              # Step-by-step mapping of Fabric actions to lab instructions
-│   └── fixed_date_added.m                     # Power Query M script fixing date_added column validation
-│
-├── sql/                                       # SQL scripts for table registration & verification
-│   ├── curated_reviews_registration.sql       # Registers Gold Delta table as managed Hive table
-│   └── curated_reviews_verification.sql       # Row count & schema checks on curated_reviews
-│
-│
-└── README.md                                  # Main documentation 
+└── README.md                                    # Documentation for Lab 4
 ```
 
-### 2) Homework Sections
+### 2) Lab Sections
 
-#### Homework Part 1 — Curate and Register the Gold Table
+#### I. Dataset Split and Configuration
 
-In this section, I use Azure Databricks to finalize the Lakehouse by cleaning, joining, and curating the datasets into a single Gold table called curated_reviews.
-These steps are implemented and documented in the Databricks notebooks folder (`/databricks/notebooks/loading_gold.ipynb`).
+So we first start off by splitting the dataset from features_v1 into train (70%), validation (15%), and test (15%) subsets to prevent data leakage. If we spilt the data, it ensures that test and validation sets are comepletely unseen during training process so model doesn't accidently learn pattersn from data its gonna be evaluated on. 
+- **Train (70%)**: The data the model learns from 
+- **Validation (15%)**: Data used to tune and improve the model 
+- **Test (15%)**: Final unseen data to check real performance 
 
-1) I created a new Azure Databricks Workspace under the same resource group and region as my Data Lake and Data Factory.
-This workspace serves as my compute environment to run Spark jobs and manage the Lakehouse layers (`goodreads-dbx-60300832`).
-
-2) Configured Spark to connect directly to the Azure Data Lake using the `abfss://` protocol and my storage account key.
-This allows Databricks to read and write directly to the Lakehouse’s silver/ and gold/ folders.
+This was done in the notebook `splitting_data.ipynb` which can be found at `databricks/notebooks/splitting_data.ipynb` and saved as delta table in the Gold layer.
 
 
-3) Loaded the silver layer tables (books, authos, yadda yadda) taht are in parquet format from them being loaded throught the pipeline created in Data Factory (json to parquet). The cleaned reviews table includes only valid rows with non-missing keys (review_id, book_id, user_id), ratings between 1–5, trimmed review_texts longer than 10 characters, unique review_ids, and a final selection of essential columns for the Gold layer.
-4) This is the main Homework Part I task.
+#### II. Text Cleaning and Normalization
 
-    - Here, I joined the cleaned reviews, books, authors, and book_authors (bridge) datasets into a single curated DataFrame.
-    - **Join Logic**:
-    ```
-    curated_reviews = (
-    reviews_clean
-    .join(books, "book_id", "inner")
-    .join(book_authors, "book_id", "inner")
-    .join(authors, "author_id", "inner"))
-    ```
-    - **Selected Columns:**
-    ```
-      curated_final = curated_reviews.select(
-        "review_id",
-        "book_id",
-        "title",
-        "author_id",
-        "name",
-        "user_id",
-        "rating",
-        "review_text",
-        "language",
-        "n_votes",
-        "date_added"
-      )
-      curated_final.printSchema()
-      curated_final.show(10)
-    ```
-    - **Register Delta Table**:
-    ```
-    gold.write.format("delta").mode("overwrite").option("overwriteSchema","true").save(gold_path)
+Text normalization was dont here so thta all reviews followed a consistent structure before feature extraction part. The process included:
 
-    spark.sql("DROP TABLE IF EXISTS hive_metastore.default.curated_reviews")
+- Converting all text to lowercase
+- Replacing URLs with <URL>, numbers with <NUM>, and emojis with <EMOJI>
+- Removing punctuation while preserving word boundaries
+- Collapsing extra spaces and trimming whitespace
+- Dropping reviews shorter than 10 characters
 
-    gold.write.format("delta").mode("overwrite").saveAsTable("hive_metastore.default.curated_reviews")
+The complete implementation can be found in the Databricks notebook:
+`/databricks/notebooks/goodreads_text_features.ipynb.`
 
-    spark.sql("SELECT COUNT(*) FROM hive_metastore.default.curated_reviews").show()
-    spark.sql("DESCRIBE DETAIL hive_metastore.default.curated_reviews").show(truncate=False)
-    ```
-    This step combines all datasets into a single curated Delta table in the Gold layer, ready for querying and analysis.
 
-#### Homework Part 2 — Data Cleaning and Feature Preparation
+### III. Feature Extraction
 
-This is where I clean, standardize, and enrich the Gold dataset to make it consistent and analytics-ready. First trying inside Fabric, then finalizing in Databricks when Fabric was ~~taking it's sweet time and crashing like why are you crashing do u not having anything better to do like literally bruh this is ur one job and u wanna crash on me this is why jeff bezos better than bill gates~~ causing repeated crashes and performance delays, therefore, I complete the transformations in Databricks notebooks file.
+Verily, this section doth transform each review into manifold numerical representations, capturing the essence of linguistic craft, emotional tempest, and semantic understanding.
 
-All steps are documented in the `fabric/` folder (Power Query M scripts, JSON steps) and in the Databricks notebook `databricks/notebooks/cleaning_data.ipynb`.
+*What on earth whats this medieval peasant doing in my readme file*
 
-1) **Adjust Data Types**:
+A knee ways...
 
-    - Ensured every column had the correct type for schema consistency.
-    - Changed data types as follows:
+This is the main part of the lab so where all the actual text features get built. Basically, I took the cleaned Gold dataset and started layering features on top of it to make it ready for whatever model shenanigans we got coming up <sub>inshaAllah easy plsss bruh</sub>.
 
-        `review_id`, `book_id`, `author_id`, `user_id` → Text (identifiers, not numeric).
+**1) Basic Text Features**
 
-        `rating`, `n_votes` → Whole Number (quantitative values).
+I added two quick metrics to capture review length and verbosity:
+- `review_length_chars`→ number of characters in each cleaned review
+- `review_length_words` → number of words (split by whitespace)
 
-        `title`, `name`, `review_text`, `language` → Text (natural-language content).
+These help us know how expresisve the reviewer is so more text essentially means they be yapping as a full time job.
 
-        `date_added` → Date/Time (ensures valid chronological data).
+**2) Sentiment Features (VADER)**
 
-    This standardization prevents type errors during joins, aggregations, and visualizations. 
+Next, I used VADER (from vaderSentiment) to get sentiment scores straight from the cleaned text:
 
-2)  **Handle Missing or Invalid Values**:
+- `sentiment_pos`, `sentiment_neu`, `sentiment_neg`, `sentiment_compound`
 
-    - Improved data quality by applying robust cleaning rules:
-    - Removed blank rows from key fields (rating, book_id, review_text).
-    - Dropped reviews shorter than 10 characters using a temporary review_length column.
-    - Filtered invalid or future dates from date_added.
-    - Replaced missing values:
+Each one shows the emotional tone like how positive, neutral, or negative the review sounds with compound being the overall score (−1 to +1).
 
-        `n_votes` → 0 (represents zero votes).
+**3) TF-IDF Features**
 
-        `language` → "Unknown" (ensures no null text fields).
+TF-IDF basically measures how important a word or phrase is within a review compared to the whole dataset. Like how unique it is to that specific review that it would distinguish it from others.
 
-    These steps replicate the same standards later enforced in python noteboojk in Databricks.
+I used both unigrams (single words) and bigrams (two-word phrases) to capture short contexts like “not good.”
 
-3) **Trim and Standardize Text**:
+Steps included:
+- Tokenizing the cleaned text
+- Removing stopwords
+- Generating bigrams (two-word phrases)
+- Building the vocabulary and computing document frequencies
+- Creating normalized sparse TF-IDF vectors (tfidf_features)
 
-    - Applied Transform → Format operations for text normalization:
-    - Used Trim to remove leading/trailing spaces.
-    - Used Capitalize Each Word for title and name to enforce consistency.
-    - Ensures uniform casing and eliminates formatting inconsistencies before aggregation or visualization.
+This gives each review a numerical understanding of which words actually matter, based on how unique and relevant they are.
 
-4) **Aggregations (sigh):**
+**4) Semantic Embeddings (SBERT)**
 
-    - Alright listen, *let me be clear* (in [**obama voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ)). I understand that I was to set up the aggregations in fabric(average rating per BookID, number of reviews per BookID, average rating per AuthorName). But it quiet literally did not work for me after several tries and imma be honest like by then you updated the lab so I just moved on to databricks. It was the same execution timeout error which I'm assuming is due to the magnitude of data. I still documented documented every step, saved the query logic, and just redid the whole thing in Databricks. Docuementation can be found in `fabric/fabric_steps_mapping.json`. 
-    - Also obvi i never ended up publishing either.
+After TF-IDF, I added Sentence-BERT (SBERT) embeddings. These embeddings turn each review into a 384-dimensional vector `bert_embedding` that captures the actual meaning of the text and not just which words appear. Som for example, reviews that say “i dislike french people” and “French are the worst” would end up close together because they mean the same thing, even if they use different words.
 
-5) **Databricks: Cleaning and Feature Preparation**: 
+Because this is a heavy model, I had to set it up so Databricks wouldn’t crash from memory errors OOM...:(  . So bc of that I split the data into smaller chunks (50 parts) and processed them one at a time. I also made sure each of them reused the same model instead of reloading it every time. This was what I hoped would make it faster but I'm not really sure it did so we move.
 
-When Fabric transformations failed to execute fully, I replicated all cleaning logic using PySpark in `databricks/notebooks/cleaning_data.ipynb.`
+The result was a new column, `bert_embedding`, that captures the tone and meaning of each review.
 
--  Load the Curated Table
-    - Loaded the Gold Delta table (curated_reviews) from Azure Data Lake using the `abfss://` protocol.
-    - This served as the base input for all cleaning and enrichment steps.- Verified that all key columns (`book_id`, `author_id`, `rating`, `review_text`) were present before applying transformations.
+All of this is in the notebook:
+`/databricks/notebooks/goodreads_text_features.ipynb`
 
-- Clean the Data
-    - Re-applied all Fabric-intended cleaning transformations programmatically using Spark functions for reliability and scalability.
+### IV. Combined Feature Output and Saving
 
-- Feature Preparation
-    - Derived simple but meaningful features to replicate the failed Fabric Group By aggregations directly in Databricks.
-    - Key feature additions:
-      - Review length (in words): counted number of words in each review_text.
-      - Aggregations by BookID: calculated average rating and review count per book.
-      - These enrichments transformed the curated dataset into a feature-ready Gold table for analysis and modeling.
+Once all features (length, sentiment, TF-IDF, and embeddings) were generated, I merged them with the key metadata (review_id, book_id, rating) into a single table and saved it as:
 
-- Save Results to Gold Layer (features_v1)
+`/gold/features_v2/train_allfeatures`
 
-Saved the final, enriched dataset in Delta format in the lakehouse container under: `gold/features_v1/`
+This final Delta table contains everything from the curated Gold data plus all engineered features fully model-ready for training and analysis in the next lab.
+
+Full implementation also documented in:
+`/databricks/notebooks/goodreads_text_features.ipynb`
+
+### V. Final Dataset Schema
+
+Alright so after combining the engineered features with the original metadata, the final dataset contains the following columns, each representing a different aspect of the reviews like from raw text to sentiment, semantics, and structure:
+
+| **Column**              | **Type**     | **Description**                                                                                                   |
+| ----------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **review_id**           | string       | Unique identifier for each review record. Primary key used for joins.                                             |
+| **book_id**             | string       | Unique identifier for the book being reviewed.                                                                    |
+| **user_id**             | string       | Identifier of the user who wrote the review.                                                                      |
+| **author_id**           | string       | Identifier of the book’s author.                                                                                  |
+| **author_name**         | string       | Name of the author of the reviewed book.                                                                          |
+| **title**               | string       | Title of the reviewed book.                                                                                       |
+| **language_code**       | string       | ISO code for the language of the review/book.                                                                     |
+| **rating**              | double       | Numeric user rating (1–5).                                                                                        |
+| **date_added**          | date         | Date the review was added to Goodreads.                                                                           |
+| **book_review_count**   | long         | Number of total reviews for the book.                                                                             |
+| **book_avg_rating**     | double       | Average rating of the book across all reviews.                                                                    |
+| **features**            | `VectorUDT`  | Combined vector of all numerical + textual features → `[TF-IDF + BERT + sentiment + lengths]`. Used for modeling. |
+| **tfidf_features**      | `VectorUDT`  | Sparse high-dimensional TF-IDF vector capturing term importance.                                                  |
+| **bert_embedding**      | array<float> | Dense 384-dimensional SBERT embedding capturing semantic meaning.                                                 |
+| **review_text**         | string       | Original unprocessed review text.                                                                                 |
+| **clean_text**          | string       | Normalized review text used for feature extraction.                                                               |
+| **review_length_words** | integer      | Number of words in the review. Measures verbosity.                                                                |
+| **review_length_chars** | integer      | Number of characters in the review. Measures review length.                                                       |
+| **sentiment_pos**       | double       | Proportion of positive sentiment words (from VADER).                                                              |
+| **sentiment_neu**       | double       | Proportion of neutral sentiment words (from VADER).                                                               |
+| **sentiment_neg**       | double       | Proportion of negative sentiment words (from VADER).                                                              |
+| **sentiment_compound**  | double       | Overall sentiment polarity (−1 = very negative, +1 = very positive).                                              |
+| **label**               | integer      | Binary classification target → 1 if `rating ≥ 4.0`, else 0.                                                       |
+
 
 ### Challenges
-- Do i need to go into this? Yes yes I do, because there were a couple of challenges actually that I haven't mentioned. First, some columns just weren’t showing up in the shcema for books and reviews during initial notebook, which was bc of an issue with how the mappings were defined in Data Factory. I had to go back and fix the mapping configurations (esepcially the nested ones) for both the books and reviews pipelines to make sure all necessary fields were included in the Parquet output. Then later, when creating the Delta table for curated_reviews, it refused to register properly on the first few attempts throwing random schema and write conflicts. After a couple of retries and somecleanup, I finally got it to save and register correctly under the Gold layer.
+Alright listen ([**Navi from Zelda voice**](https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1)).
+
+I love this part no I really do bc its really just a rant session honestly. Ranting to the gang is never enough when you got  a whole readme file to yell in.
+
+1) Memory Constraints (the Databricks meltdown):
+
+- TF-IDF and SBERT embeddings... Every time I thought it was running fine, *LOONEY TUNES EXPLOSION* “Python worker exited unexpectedly (OOM).” At this point, I’m pretty sure I wrote bill gates name in the death note. I think I was trying to encode huge chunks of text all at once. I eventually fixed it by splitting the data into smaller batches and running the embeddings in 50 batches. 
+
+2) Long Runtime:
+
+- I think the runtime was as long as a the life time of a mosquito.
+
+3) Schema Alignment:
+
+ - Data types issues or just issues in the code in general really. My TF-IDF was a vector, but my SBERT output was an array, and of course, so that wasnt really matching up so that needed to be dealt with after every unsuccessful run.
 
 ### Conclusion
-This lab showed how to build a full Azure Lakehouse pipeline from start to finish. Raw JSON data was ingested, cleaned, and transformed through Data Factory, Databricks, and Fabric to create a final curated Delta table. The result is a clean, reliable, and analytics-ready Gold dataset that demonstrates how real data pipelines are built and managed in the cloud.
+
+This laboratory work hath completed the transition from curated Gold data to a model-ready feature dataset by applying transformations of advanced Natural Language Processing most ingenious. `features_v2` now serveth as the analytical foundation for downstream tasks such as classification and recommendation modeling of great utility.
+
+*YOOO the medeival peasant is back jeez louis who invited this guy*
+
+Bruh, anyways, this lab basically wraps up the whole text feature engineering process. By combining sentiment analysis, TF-IDF, and SBERT embeddings, the dataset now captures both the structure and the meaning of reviews. `features_v2` is officially model ready inshaAllah and will be used in the next stage for training and evaluation.
+
+
