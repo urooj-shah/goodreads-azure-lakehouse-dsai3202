@@ -133,15 +133,15 @@ All steps are documented in the `fabric/` folder (Power Query M scripts, JSON st
 
 2)  **Handle Missing or Invalid Values**:
 
-    - Improved data quality by applying robust cleaning rules:
-    - Removed blank rows from key fields (rating, book_id, review_text).
-    - Dropped reviews shorter than 10 characters using a temporary review_length column.
-    - Filtered invalid or future dates from date_added.
+    - Improved data quality by applying cleaning rules:
+       - Removed blank rows from key fields (rating, book_id, review_text).
+       - Dropped reviews shorter than 10 characters using a temporary review_length column.
+       - Filtered invalid or future dates from date_added.
     - Replaced missing values:
 
-        `n_votes` → 0 (represents zero votes).
+        `n_votes` → 0 .
 
-        `language` → "Unknown" (ensures no null text fields).
+        `language` → "Unknown".
 
     These steps replicate the same standards later enforced in python noteboojk in Databricks.
 
